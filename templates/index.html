@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Price Prediction</title>
+    <!-- Bootstrap CSS for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery UI CSS for autocomplete -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css" />
+    <style>
+        body {
+            background-color: #f8f9fa; /* Light gray background */
+        }
+        .container {
+            background-color: #ffffff; /* White background for content */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            padding: 30px;
+            margin-top: 50px;
+        }
+        h1 {
+            color: #007bff; /* Primary color for the title */
+        }
+        .form-label {
+            color: #495057; /* Darker gray for form labels */
+        }
+        .btn-primary {
+            background-color: #007bff; /* Button color */
+            border-color: #007bff; /* Button border color */
+        }
+        .btn-primary:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+            border-color: #0056b3; /* Darker border on hover */
+        }
+        #prediction-result h2 {
+            color: #28a745; /* Green color for prediction results */
+        }
+        #error-message {
+            color: red; /* Red color for error messages */
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Stock Price Prediction</h1>
+        
+        <!-- Ticker symbol input with autocomplete -->
+        <form id="stock-form" class="d-flex justify-content-center mb-4">
+            <div class="col-4">
+                <label for="symbol" class="form-label">Select Stock Symbol</label>
+                <input type="text" class="form-control" id="symbol" name="symbol" placeholder="Start typing a symbol..." required>
+            </div>
+            <div class="ms-3">
+                <button type="submit" class="btn btn-primary mt-4">Predict</button>
+            </div>
+        </form>
+
+        <!-- Display prediction result -->
+        <div id="prediction-result" class="text-center mt-4">
+            <h2 id="curr-price" style="display:none;">Current Price: $<span id="current-price"></span></h2>
+            <h2 id="predicted-price" style="display:none;">Predicted Price 30 Days from Now: $<span id="future-price"></span></h2>
+            <img id="prediction-image" src="" alt="Prediction plot" class="img-fluid mt-4" style="display:none;">
+        </div>
+        
+        <!-- Error message display -->
+        <div id="error-message" class="text-center mt-4"></div>
+    </div>
+
+    <!-- jQuery for form and autocomplete handling -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Autocomplete for stock symbols
+            $('#symbol').autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search-tickers',
+                        dataType: 'json',
+                        data: { query: request.term },
+                        success: function(data) {
+                            response(data);
+                        }
+                    });
+                },
+                minLength: 2
+            });
+
+            // Form submission to predict stock price
+            $('#stock-form').on('submit', function(e) {
+                e.preventDefault();
+                $('#error-message').text(''); // Clear previous error message
+                $.ajax({
+                    type: 'POST',
+                    url: '/predict',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        // Show the predicted price 30 days from now
+                        if (response.error) {
+                            $('#error-message').text(response.error);
+                        } else {
+                            $('#current-price').text(response.current_price.toFixed(2));
+                            $('#future-price').text(response.prices[response.prices.length - 1].toFixed(2));
+                            $('#curr-price').show();
+                            $('#predicted-price').show();
+
+                            // Show the prediction plot
+                            $('#prediction-image').attr('src', '/static/prediction_plot.png').show();
+                        }
+                    },
+                    error: function() {
+                        $('#error-message').text('An error occurred while processing your request.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
